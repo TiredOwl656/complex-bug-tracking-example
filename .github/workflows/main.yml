@@ -1,0 +1,26 @@
+name: Project Board Automation
+
+on:
+  pull_request:
+    types: [opened, closed, reopened, synchronize, edited]  # Отслеживаем события PR
+  issues:
+    types: [labeled, unlabeled, closed, reopened] # Отслеживаем события Issue
+
+jobs:
+  project_board:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add to Project Board / Move Card
+        uses: actions/add-to-project@v2
+        with:
+          project-url: https://github.com/orgs/<ВАША_ОРГАНИЗАЦИЯ>/projects/<НОМЕР_ПРОЕКТА> # Замените на URL вашего проекта
+          github-token: ${{ secrets.GITHUB_TOKEN }} # Использует автоматически сгенерированный токен
+          column-name: |
+              ${{ contains(github.event.issue.labels.*.name, 'in progress') && 'In Progress' }}
+              ${{ contains(github.event.issue.labels.*.name, 'in review') && 'In Review' }}
+              ${{ github.event.pull_request.merged && 'Done' }}
+              ${{ github.event.pull_request.state == 'closed' && !github.event.pull_request.merged && 'Backlog' }}
+              ${{ github.event.issue.state == 'closed' && 'Done' }}
+              ${{ github.event_name == 'issues' && github.event.issue.state == 'open' && 'Backlog'}}
+              ${{ github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && 'Backlog'}}
+              # Default column if none of the above match
